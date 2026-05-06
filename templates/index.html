@@ -1,0 +1,565 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brother Auto-Digitizer | Osva.Logic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- TEMA Y VARIABLES --- */
+        :root {
+            --bg-dark: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --accent: #ec4899;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* --- FONDO DE CUADRÍCULA MÓVIL --- */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: -50%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            animation: panGrid 20s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes panGrid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+        }
+
+        /* --- FONDOS ANIMADOS (GLOW ORBS) --- */
+        .bg-orbs {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #0f172a, #2d1b4e);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+        }
+        .orb-1 {
+            width: 400px; height: 400px;
+            background: var(--primary);
+            top: -10%; left: -10%;
+            animation: float1 12s infinite alternate ease-in-out;
+        }
+        .orb-2 {
+            width: 300px; height: 300px;
+            background: var(--accent);
+            bottom: -10%; right: -5%;
+            animation: float2 14s infinite alternate ease-in-out;
+        }
+        .orb-3 {
+            width: 250px; height: 250px;
+            background: #3b82f6;
+            top: 40%; left: 50%;
+            animation: float3 18s infinite alternate ease-in-out;
+        }
+        .orb-4 {
+            width: 200px; height: 200px;
+            background: #8b5cf6;
+            bottom: 30%; left: 15%;
+            animation: float1 10s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes float1 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(60px, 40px) scale(1.1); }
+            100% { transform: translate(-30px, 80px) scale(0.9); }
+        }
+        @keyframes float2 {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-80px, -60px) scale(1.2); }
+            100% { transform: translate(40px, -100px) scale(0.95); }
+        }
+        @keyframes float3 {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-30%, -70%) scale(1.4); }
+            100% { transform: translate(-60%, -30%) scale(1.1); }
+        }
+
+        /* --- PANTALLA DE CARGA --- */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--glass-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- CONTENEDOR PRINCIPAL (GLASSMORPHISM) --- */
+        .app-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 2rem;
+            padding: 2.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            opacity: 0;
+            transform: translateY(40px) scale(0.98);
+            animation: containerEnter 1s cubic-bezier(0.16, 1, 0.3, 1) forwards, 
+                       containerPulse 5s infinite alternate ease-in-out 1s;
+        }
+
+        @keyframes containerEnter {
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes containerPulse {
+            from { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-color: var(--glass-border); }
+            to { box-shadow: 0 25px 60px -5px rgba(99, 102, 241, 0.25); border-color: rgba(99, 102, 241, 0.3); }
+        }
+
+        /* Staggered Animations para los hijos */
+        .app-header { 
+            text-align: center; 
+            opacity: 0; 
+            animation: fadeInUp 0.8s ease-out 0.2s forwards; 
+        }
+        .drop-zone-container { 
+            opacity: 0; 
+            animation: fadeInUp 0.8s ease-out 0.4s forwards; 
+        }
+        .sidebar-settings { 
+            opacity: 0; 
+            animation: fadeInUp 0.8s ease-out 0.6s forwards; 
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            animation: floatBadge 3s infinite alternate ease-in-out;
+        }
+        @keyframes floatBadge {
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
+        }
+        
+        .glow-text {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #a5b4fc, #f472b6, #a5b4fc);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            animation: textShine 4s linear infinite;
+        }
+        @keyframes textShine {
+            to { background-position: 200% center; }
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            max-width: 550px;
+            margin: 0 auto;
+        }
+
+        /* --- ESTRUCTURA DEL FORMULARIO --- */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 850px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .app-container { margin: 1rem; padding: 1.5rem; }
+            .glow-text { font-size: 2rem; }
+        }
+
+        /* --- ÁREA DRAG & DROP --- */
+        .drop-zone {
+            height: 100%;
+            min-height: 350px;
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(30,41,59,0.5) 100%);
+            background-size: 200% 200%;
+            overflow: hidden;
+            animation: bgMove 4s ease infinite;
+        }
+        @keyframes bgMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.08);
+        }
+        .drop-zone.drag-over {
+            transform: scale(1.02);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.3);
+        }
+        .drop-zone-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));
+            transition: transform 0.3s ease;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 5px rgba(255,255,255,0.1)); }
+            50% { transform: translateY(-10px); filter: drop-shadow(0 0 15px var(--primary)); }
+        }
+        .drop-zone:hover .drop-zone-icon { animation-play-state: paused; transform: translateY(-15px) scale(1.1); filter: drop-shadow(0 0 20px var(--accent)); }
+        .drop-zone-text { color: var(--text-muted); line-height: 1.6; }
+        .drop-zone input[type="file"] { display: none; }
+        
+        #image-preview {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+            padding: 10px;
+            border-radius: 14px;
+        }
+        .file-info {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 0.5rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            z-index: 10;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* --- PANEL LATERAL DE CONFIGURACIÓN --- */
+        .sidebar-settings {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 1.5rem;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            border: 1px solid var(--glass-border);
+        }
+        .sidebar-settings h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .form-group label {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .custom-select {
+            background: rgba(15, 23, 42, 0.8);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .custom-select:focus, .custom-select:hover { border-color: var(--primary); box-shadow: 0 0 10px rgba(99,102,241,0.2); }
+
+        /* Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.6);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .val-badge {
+            background: var(--primary);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* Botón Primario */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent), var(--primary));
+            background-size: 200% auto;
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: auto;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: pulseGlow 2.5s infinite, btnGradient 4s linear infinite;
+        }
+        @keyframes btnGradient {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            animation: btnGradient 4s linear infinite; /* Stop pulse on hover */
+        }
+        .btn-primary:active { transform: translateY(0); }
+
+        /* Footer */
+        .app-footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+        }
+        .app-footer strong { color: #a5b4fc; }
+    </style>
+</head>
+<body>
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+    </div>
+
+    <!-- Pantalla de Carga -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <h2 class="glow-text">Digitalizando...</h2>
+        <p>Procesando las puntadas, por favor espera.</p>
+    </div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="badge">BROTHER ENGINE BETA v1.0</div>
+            <h1 class="glow-text">Generador de Bordados</h1>
+            <p class="subtitle">Sube tu imagen, configura los detalles de puntada inteligente y descarga el diseño listo para la máquina.</p>
+        </header>
+
+        <form id="digitize-form" action="{% url 'digitize' %}" method="POST" enctype="multipart/form-data" class="main-layout">
+            {% csrf_token %}
+            
+            <main class="drop-zone-container">
+                <div id="drop-zone" class="drop-zone">
+                    <span class="drop-zone-icon">📥</span>
+                    <span class="drop-zone-text">Arrastra y suelta tu imagen aquí<br><small>o haz clic para explorar en tus archivos</small></span>
+                    <input type="file" name="image" id="file-input" accept="image/png, image/jpeg" required>
+                    <div class="file-info" id="file-info" style="display: none;">
+                        <span class="file-name" id="file-name"></span>
+                    </div>
+                    <img id="image-preview" src="" alt="Previsualización de la imagen" style="display: none;">
+                </div>
+            </main>
+
+            <aside class="sidebar-settings">
+                <h2>⚙️ Ajustes de Costura</h2>
+                
+                <div class="form-group">
+                    <label for="stitch-type">Tipo de Puntada:</label>
+                    <select name="stitch_type" id="stitch-type" class="custom-select">
+                        <option value="tatami">Relleno (Tatami)</option>
+                        <option value="satin">Satín (Bordes)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="density-range">Densidad (Escala): <span id="density-val" class="val-badge">10</span></label>
+                    <input type="range" name="density" id="density-range" min="1" max="50" value="10">
+                    <div class="range-labels">
+                        <small>Fino</small><small>10 = 1mm/px</small><small>Grueso</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="output-format">Formato de Máquina:</label>
+                    <select name="output_format" id="output-format" class="custom-select">
+                        <option value="dst">Tajima (.DST)</option>
+                        <option value="pes">Brother (.PES)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submit-btn">
+                    🚀 Digitalizar y Descargar
+                </button>
+            </aside>
+        </form>
+
+        <footer class="app-footer">
+            <p>Diseñado a otro nivel con 💻 y ☕ por <strong>Osva.Logic</strong></p>
+        </footer>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const imgPreview = document.getElementById('image-preview');
+        const densityRange = document.getElementById('density-range');
+        const densityVal = document.getElementById('density-val');
+        const fileNameDisplay = document.getElementById('file-name');
+        const fileInfo = document.getElementById('file-info');
+        const form = document.getElementById('digitize-form');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        // Actualizar valor de rango visual
+        densityRange.addEventListener('input', (e) => { densityVal.textContent = e.target.value; });
+
+        // Clic en área abre el selector de archivos
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // Eventos Drag & Drop
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                showPreview(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function() { if (this.files.length) showPreview(this.files[0]); });
+
+        // Mostrar Spinner al enviar el formulario
+        form.addEventListener('submit', () => {
+            loadingOverlay.style.display = 'flex';
+        });
+
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imgPreview.src = e.target.result;
+                imgPreview.style.display = 'block';
+                document.querySelector('.drop-zone-text').style.display = 'none';
+                document.querySelector('.drop-zone-icon').style.display = 'none';
+                fileNameDisplay.textContent = file.name;
+                fileInfo.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>

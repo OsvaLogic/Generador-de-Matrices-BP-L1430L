@@ -1,0 +1,123 @@
+:root {
+    --bg-main: #1e1f22;
+    --bg-panel: #2b2d30;
+    --border-color: #393b40;
+    --text-primary: #cccccc;
+    --text-header: #8fa1b3;
+    --accent: #3574f0;
+    --accent-hover: #4682f6;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.app-container {
+    width: 95%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.app-header {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.app-header h1 {
+    color: var(--text-header);
+    margin: 0;
+    font-size: 24px;
+}
+
+.main-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+/* --- Drop Zone --- */
+.drop-zone-container {
+    flex: 1;
+    min-width: 400px;
+}
+
+.drop-zone {
+    background-color: var(--bg-panel);
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    height: 450px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background-color: #313337;
+}
+
+.drop-zone input[type="file"] {
+    display: none;
+}
+
+.drop-zone-icon { font-size: 48px; margin-bottom: 15px; }
+.drop-zone-text { text-align: center; font-size: 16px; color: #777; }
+
+#image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 10;
+}
+
+/* --- Sidebar --- */
+.sidebar-settings {
+    width: 320px;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sidebar-settings h2 {
+    color: var(--text-header);
+    font-size: 18px;
+    margin-top: 0;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-group small { color: #777; font-size: 12px; }
+
+.custom-select {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.btn-primary {
+    margin-top: auto; background-color: var(--accent);
+    color: white; border: none; padding: 15px; border-radius: 6px;
+    font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
+}
+.btn-primary:hover { background-color: var(--accent-hover); }
