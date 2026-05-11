@@ -89,9 +89,17 @@ class EmbroideryApp(QMainWindow):
         
         # Botones Didácticos
         self.btn_bucket = QPushButton("🪣 Relleno")
+        self.btn_bucket.setShortcut("F")
+        self.btn_bucket.setToolTip("Atajo: F (Fill)")
         self.btn_brush = QPushButton("🖌️ Pincel")
+        self.btn_brush.setShortcut("B")
+        self.btn_brush.setToolTip("Atajo: B (Brush)")
         self.btn_eraser = QPushButton("🧹 Borrador")
+        self.btn_eraser.setShortcut("E")
+        self.btn_eraser.setToolTip("Atajo: E (Eraser)")
         self.btn_picker = QPushButton("💧 Pipeta")
+        self.btn_picker.setShortcut("I")
+        self.btn_picker.setToolTip("Atajo: I (Eyedropper)")
         
         for btn in [self.btn_bucket, self.btn_brush, self.btn_eraser, self.btn_picker]:
             btn.setCheckable(True)
