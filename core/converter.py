@@ -29,12 +29,18 @@ def generate_coloring_book(image_path):
         bgr = img.copy()
         alpha_orig = np.ones(bgr.shape[:2], dtype=np.uint8) * 255
     
-    # Convertir a escala de grises y suavizar para evitar ruido
+    # Convertir a escala de grises
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
-    img_blur = cv2.medianBlur(gray, 3) # Reducido a 3 para no borrar los detalles finos
     
-    # Detección de bordes Canny
-    edges = cv2.Canny(img_blur, 50, 150)
+    # Filtro Bilateral: Suaviza la imagen conservando los bordes duros (elimina ruido y sombras)
+    blur = cv2.bilateralFilter(gray, 9, 75, 75)
+    
+    # Umbral adaptativo: Extrae líneas excelentes y robustas sin importar la iluminación
+    adaptive = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    
+    # Detección de bordes Canny auxiliar y combinación final
+    canny = cv2.Canny(blur, 50, 150)
+    edges = cv2.bitwise_or(cv2.bitwise_not(adaptive), canny)
     
     # Eliminar el marco cuadrado absoluto
     edges[0:5, :] = 0; edges[-5:, :] = 0
@@ -74,15 +80,19 @@ def apply_flood_fill(img_bgra, x, y, bgr_color):
     result[:, :, 3][fill_area] = 255
     return result
 
-def apply_eraser(img_bgra, x, y, radius=10):
-    """Borra el color restaurando el papel blanco."""
+def apply_eraser(img_bgra, x, y, radius=10, prev_x=None, prev_y=None):
+    """Borra el color restaurando el papel blanco con interpolación continua."""
     result = img_bgra.copy()
-    cv2.circle(result, (x, y), radius, (255, 255, 255, 255), -1)
+    if prev_x is not None and prev_y is not None:
+        cv2.line(result, (prev_x, prev_y), (x, y), (255, 255, 255, 255), thickness=radius*2, lineType=cv2.LINE_AA)
+    cv2.circle(result, (x, y), radius, (255, 255, 255, 255), -1, lineType=cv2.LINE_AA)
     return result
 
-def apply_brush(img_bgra, x, y, bgr_color, radius=10):
-    """Dibuja un trazo de color libremente como un pincel."""
+def apply_brush(img_bgra, x, y, bgr_color, radius=10, prev_x=None, prev_y=None):
+    """Dibuja un trazo de color libremente como un pincel con interpolación continua."""
     result = img_bgra.copy()
     color_bgra = (int(bgr_color[0]), int(bgr_color[1]), int(bgr_color[2]), 255)
-    cv2.circle(result, (x, y), radius, color_bgra, -1)
+    if prev_x is not None and prev_y is not None:
+        cv2.line(result, (prev_x, prev_y), (x, y), color_bgra, thickness=radius*2, lineType=cv2.LINE_AA)
+    cv2.circle(result, (x, y), radius, color_bgra, -1, lineType=cv2.LINE_AA)
     return result

@@ -5,13 +5,14 @@ from PyQt6.QtCore import Qt, pyqtSignal, QObject, QLineF
 class ItemSignals(QObject):
     """Clase auxiliar para manejar señales de forma segura en Qt."""
     clicked = pyqtSignal(int, int)
-    dragged = pyqtSignal(int, int)
+    dragged = pyqtSignal(int, int, int, int)
     released = pyqtSignal()
 
 class InteractivePixmapItem(QGraphicsPixmapItem):
     def __init__(self, pixmap=None):
         super().__init__()
         self._signals = ItemSignals()
+        self._last_pos = None
         if pixmap:
             self.setPixmap(pixmap)
             
@@ -26,13 +27,17 @@ class InteractivePixmapItem(QGraphicsPixmapItem):
         
     def mousePressEvent(self, event):
         pos = event.pos()
+        self._last_pos = pos
         self.clicked.emit(int(pos.x()), int(pos.y()))
         
     def mouseMoveEvent(self, event):
         pos = event.pos()
-        self.dragged.emit(int(pos.x()), int(pos.y()))
+        if self._last_pos:
+            self.dragged.emit(int(pos.x()), int(pos.y()), int(self._last_pos.x()), int(self._last_pos.y()))
+        self._last_pos = pos
         
     def mouseReleaseEvent(self, event):
+        self._last_pos = None
         self.released.emit()
 
 class ThumbnailLabel(QLabel):

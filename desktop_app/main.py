@@ -487,17 +487,17 @@ class EmbroideryApp(QMainWindow):
             item.setIcon(QIcon(pixmap))
             self.used_colors_list.addItem(item)
 
-    def apply_erase(self, x, y):
+    def apply_erase(self, x, y, prev_x=None, prev_y=None):
         """Ejecuta el borrado localmente sin recalcular la lista de colores enteros."""
         radius = self.slider_eraser.value()
-        self.current_coloring_img = apply_eraser(self.current_coloring_img, x, y, radius)
+        self.current_coloring_img = apply_eraser(self.current_coloring_img, x, y, radius, prev_x, prev_y)
         self.update_image_display()
         
-    def apply_paint(self, x, y):
+    def apply_paint(self, x, y, prev_x=None, prev_y=None):
         """Aplica un círculo de color usando el Pincel Libre."""
         if not self.active_color: return
         radius = self.slider_eraser.value()
-        self.current_coloring_img = apply_brush(self.current_coloring_img, x, y, self.active_color, radius)
+        self.current_coloring_img = apply_brush(self.current_coloring_img, x, y, self.active_color, radius, prev_x, prev_y)
         self.update_image_display()
 
     def save_to_history(self):
@@ -577,13 +577,13 @@ class EmbroideryApp(QMainWindow):
         self.update_image_display()
         self.update_color_counter()
 
-    def on_image_dragged(self, x, y):
-        """Evento para arrastrar continuamente el borrador."""
+    def on_image_dragged(self, x, y, prev_x, prev_y):
+        """Evento para arrastrar continuamente el borrador o pincel."""
         if self.current_coloring_img is None: return
         if self.btn_eraser.isChecked():
-            self.apply_erase(x, y)
+            self.apply_erase(x, y, prev_x, prev_y)
         elif self.btn_brush.isChecked():
-            self.apply_paint(x, y)
+            self.apply_paint(x, y, prev_x, prev_y)
             
     def refresh_used_colors(self):
         """Revisa la imagen entera al soltar el clic para ver qué colores quedan realmente tras borrar."""
