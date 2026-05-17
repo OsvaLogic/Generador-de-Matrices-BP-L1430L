@@ -1,7 +1,7 @@
 import os
 import cv2
 from django.shortcuts import render
-from django.http import FileResponse, HttpResponseBadRequest
+from django.http import FileResponse, HttpResponseBadRequest, HttpResponse
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
@@ -40,8 +40,18 @@ def digitize_view(request):
                 add_outlines=True
             )
             
-            # Retornar archivo generado
-            return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=output_filename)
+            # Leer el archivo generado en memoria
+            with open(output_path, 'rb') as f:
+                file_data = f.read()
+                
+            # Limpieza: Eliminar archivos físicos para no llenar el disco del servidor
+            if os.path.exists(input_path): os.remove(input_path)
+            if os.path.exists(output_path): os.remove(output_path)
+            
+            # Retornar archivo desde la memoria
+            response = HttpResponse(file_data, content_type='application/octet-stream')
+            response['Content-Disposition'] = f'attachment; filename="{output_filename}"'
+            return response
         except Exception as e:
             return HttpResponseBadRequest(f"Error procesando la imagen: {str(e)}")
 

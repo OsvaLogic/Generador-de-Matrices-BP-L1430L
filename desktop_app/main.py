@@ -235,6 +235,12 @@ class EmbroideryApp(QMainWindow):
         lbl_palette.setObjectName("headerLabel")
         right_panel.addWidget(lbl_palette)
         
+        # Indicador de Color Activo
+        self.lbl_active_color_preview = QLabel("Ningún Hilo Seleccionado")
+        self.lbl_active_color_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_active_color_preview.setFixedHeight(35)
+        right_panel.addWidget(self.lbl_active_color_preview)
+        
         self.palette_list = QListWidget()
         self.palette_list.setFixedWidth(240)
         self.palette_list.setIconSize(QSize(24, 24))
@@ -434,17 +440,30 @@ class EmbroideryApp(QMainWindow):
         
         self.edit_view.viewport().setCursor(cursor)
 
+    def update_active_color_ui(self, b, g, r):
+        """Actualiza el panel visual con el color activo."""
+        # Calcular luminancia para decidir si la letra es blanca o negra
+        luma = (r * 0.299 + g * 0.587 + b * 0.114)
+        text_color = "black" if luma > 186 else "white"
+        self.lbl_active_color_preview.setText(f"Color Activo: ({r}, {g}, {b})")
+        self.lbl_active_color_preview.setStyleSheet(
+            f"background-color: rgb({r}, {g}, {b}); color: {text_color}; "
+            f"border: 1px solid #5e6266; border-radius: 4px; font-weight: bold;"
+        )
+
     def on_palette_selection(self):
         """Actualiza el color activo cuando el usuario hace clic en la lista de paleta."""
         selected = self.palette_list.currentItem()
         if selected:
             self.active_color = selected.data(Qt.ItemDataRole.UserRole)
+            self.update_active_color_ui(*self.active_color)
 
     def on_thumbnail_color_picked(self, color):
         """Atrapa el color si el usuario usa la pipeta sobre la miniatura original."""
         if self.btn_picker.isChecked():
             self.active_color = color
             self.palette_list.clearSelection()
+            self.update_active_color_ui(*self.active_color)
 
     def load_image(self):
         file_name, _ = QFileDialog.getOpenFileName(
@@ -549,6 +568,7 @@ class EmbroideryApp(QMainWindow):
             if a < 128: return
             self.active_color = (int(b), int(g), int(r))
             self.palette_list.clearSelection()
+            self.update_active_color_ui(*self.active_color)
             return
             
         if self.btn_brush.isChecked():

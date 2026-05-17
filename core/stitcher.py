@@ -48,10 +48,9 @@ BROTHER_COLORS = [
 ]
 
 def get_closest_brother_color(r, g, b):
-    """Encuentra el color Brother más cercano usando distancia euclidiana de forma vectorizada/nativa."""
-    # Optimización: Se elimina math.sqrt y el bucle for explícito.
-    # min() con lambda opera a nivel de C, reduciendo drásticamente el tiempo de ejecución de esta función masiva.
-    return min(BROTHER_COLORS, key=lambda c: (r - c[1])**2 + (g - c[2])**2 + (b - c[3])**2)
+    """Encuentra el color Brother más cercano usando distancia ponderada (Luma) para mejor percepción visual."""
+    # Ponderamos R, G y B según la sensibilidad del ojo humano para evitar emparejamientos extraños.
+    return min(BROTHER_COLORS, key=lambda c: (r - c[1])**2 * 0.299 + (g - c[2])**2 * 0.587 + (b - c[3])**2 * 0.114)
 
 def generate_tatami_from_colored_image(colored_img, output_path, scale=10, add_outlines=True, progress_callback=None):
     """Procesa los colores y convierte los píxeles en instrucciones y puntadas de la bordadora."""
