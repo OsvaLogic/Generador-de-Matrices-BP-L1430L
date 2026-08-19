@@ -521,11 +521,14 @@
                 <div id="drop-zone" class="drop-zone">
                     <span class="drop-zone-icon">↓</span>
                     <span class="drop-zone-text">Arrastra y suelta tu imagen aquí<br><small>o haz clic para explorar en tus archivos</small></span>
-                    <input type="file" name="image" id="file-input" accept="image/png, image/jpeg" required>
+                    <input type="file" name="image" id="file-input" accept="image/png, image/jpeg, image/bmp" required>
                     <div class="file-info" id="file-info" style="display: none;">
                         <span class="file-name" id="file-name"></span>
+                        <span class="file-meta" id="file-meta"></span>
+                        <button type="button" class="btn-reset" id="reset-file">Quitar imagen</button>
                     </div>
                     <img id="image-preview" src="" alt="Previsualización de la imagen" style="display: none;">
+                    <p class="upload-error" id="upload-error" role="alert" aria-live="polite"></p>
                 </div>
             </main>
 
@@ -582,7 +585,7 @@
                 <div class="form-group">
                     <label for="output-format">Formato de Máquina:</label>
                     <select name="output_format" id="output-format" class="custom-select">
-                        <option value="pes" selected">Brother (.PES) - Conserva colores</option>
+                        <option value="pes" selected>Brother (.PES) - Conserva colores</option>
                         <option value="dst">Tajima (.DST) - Industrial</option>
                         <option value="jef">Janome (.JEF) - Doméstica</option>
                         <option value="exp">Bernina (.EXP) - Comercial</option>
@@ -607,9 +610,14 @@
         const densityRange = document.getElementById('density-range');
         const densityVal = document.getElementById('density-val');
         const fileNameDisplay = document.getElementById('file-name');
+        const fileMetaDisplay = document.getElementById('file-meta');
         const fileInfo = document.getElementById('file-info');
+        const resetFileButton = document.getElementById('reset-file');
+        const uploadError = document.getElementById('upload-error');
         const form = document.getElementById('digitize-form');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const maxFileSize = 5 * 1024 * 1024;
+        const acceptedTypes = ['image/png', 'image/jpeg', 'image/bmp'];
 
         // Actualizar valor de rango visual
         densityRange.addEventListener('input', (e) => { densityVal.textContent = e.target.value; });
@@ -624,17 +632,55 @@
             e.preventDefault();
             dropZone.classList.remove('drag-over');
             if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                showPreview(e.dataTransfer.files[0]);
+                setSelectedFile(e.dataTransfer.files[0]);
             }
         });
 
-        fileInput.addEventListener('change', function() { if (this.files.length) showPreview(this.files[0]); });
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) setSelectedFile(this.files[0]);
+        });
+
+        resetFileButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetFile();
+        });
 
         // Mostrar Spinner al enviar el formulario
-        form.addEventListener('submit', () => {
+        form.addEventListener('submit', (e) => {
+            if (!fileInput.files.length || !validateFile(fileInput.files[0])) {
+                e.preventDefault();
+                return;
+            }
+            const submitButton = document.getElementById('submit-btn');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Procesando diseño...';
             loadingOverlay.style.display = 'flex';
         });
+
+        function setSelectedFile(file) {
+            clearUploadError();
+            if (!validateFile(file)) {
+                fileInput.value = '';
+                return;
+            }
+
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            showPreview(file);
+        }
+
+        function validateFile(file) {
+            if (!acceptedTypes.includes(file.type)) {
+                showUploadError('Formato no compatible. Usa una imagen PNG, JPG o BMP.');
+                return false;
+            }
+            if (file.size > maxFileSize) {
+                showUploadError('La imagen supera el límite de 5 MB.');
+                return false;
+            }
+            return true;
+        }
 
         function showPreview(file) {
             const reader = new FileReader();
@@ -644,9 +690,38 @@
                 document.querySelector('.drop-zone-text').style.display = 'none';
                 document.querySelector('.drop-zone-icon').style.display = 'none';
                 fileNameDisplay.textContent = file.name;
+                fileMetaDisplay.textContent = `${formatFileSize(file.size)} · leyendo dimensiones...`;
                 fileInfo.style.display = 'block';
+
+                imgPreview.onload = () => {
+                    fileMetaDisplay.textContent = `${formatFileSize(file.size)} · ${imgPreview.naturalWidth} × ${imgPreview.naturalHeight} px`;
+                };
             };
             reader.readAsDataURL(file);
+        }
+
+        function resetFile() {
+            fileInput.value = '';
+            imgPreview.removeAttribute('src');
+            imgPreview.style.display = 'none';
+            fileInfo.style.display = 'none';
+            document.querySelector('.drop-zone-text').style.display = '';
+            document.querySelector('.drop-zone-icon').style.display = '';
+            clearUploadError();
+        }
+
+        function formatFileSize(bytes) {
+            return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+        }
+
+        function showUploadError(message) {
+            uploadError.textContent = message;
+            dropZone.classList.add('has-error');
+        }
+
+        function clearUploadError() {
+            uploadError.textContent = '';
+            dropZone.classList.remove('has-error');
         }
     </script>
 </body>
